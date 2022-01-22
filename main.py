@@ -33,15 +33,14 @@ def isValid(df: pd.DataFrame):
     return True
 
 
-
 ## extract ##
 database = 'sqlite:///spotify_tracks'
 user_id = 'vnihu9uaue7nfbjh80kpp1mug'
-token = 'BQDu5XnG0O5AEBukUNxKfYMVY2EjZ6HStG1iFuNQrrgD4jojvc-U8xyQFJTbZJR4xrfiFyyuBGN4maVwC8D8GCsqbZi3jKYouMaJpQvGx_9QqFC0-YCIwKLUZ59Yhy5wweoDGCYhg33MUYtnqFYkR1Y_AiALA2Lm6MRdacXl'
+token = 'BQCcLygjMvWhkC_DaDcLjeFm5nGpX4XdUd4zxs0k8kibHp6MExcw_SdqYtcGxDoOTgvB_90dsZpqOJyPqKaHHfiglyiJ0S_CqvV0KEF3TGRDuKxA7Y4mwghjXWwfQXpv3hUKDf3T06hD_Qiv9iRfMpalObA-IOi55H9GE1-P'
 
 # a api precisa de um parâmetro em milisegundos unix para determinar o tempo na qual a requisição vai rodar
 today = datetime.datetime.today()
-yesterday = today - datetime.timedelta(days=1)
+yesterday = today - datetime.timedelta(days=60)
 yesterday_unix = int(yesterday.timestamp()) * 1000 
 
 headers = {
@@ -76,6 +75,33 @@ for song in data['items']:
     }
 
 df = pd.DataFrame(song_dict, columns=['song_name', 'release_date', 'artist_name', 'played_at', 'date_played'])
+
+## load ##
+engine = sqlalchemy.create_engine(database) # uma "engine" é criada para acessar/ criar a db
+connection = sqlite3.connect('spotify_tracks.sqlite') # uma conexão é criada para acessar a db
+cursor = connection.cursor()
+sql_query = """
+CREATE TABLE IF NOT EXISTS spotify_tracks(
+    song_name VARCHAR(200),
+    artist_name VARCHAR(200),
+    release_date VARCHAR(200),
+    played_at VARCHAR(200),
+    date_played VARCHAR(200),
+    CONSTRAINT primary_key_constraint PRIMARY KEY (played_at)
+)
+"""
+cursor.execute(sql_query)
+print('Database criada.')
+
+try:
+    df.to_sql('spotify_tracks', engine, index = False, if_exists='append') # função que passa um dataframe diretamente para uma tabela SQL
+except:
+    print("Dados já existentes na tabela")
+
+print('Processo de load finalizado')
+
+
+
 
 ## validação ##
 if isValid(df):
